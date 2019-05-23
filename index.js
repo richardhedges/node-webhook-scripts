@@ -75,11 +75,10 @@ hooks.forEach(hook => {
           .then(stdout => {
             return res.send('DONE : ' + stdout + "\n");
           })
-          // need to implement this catch below but for now it incorrectly throws an error on `git pull` so its commented out
-          // .catch(err => {
-          //   console.log(err);
-          //   return res.status(500).send('ERROR : ' + err.message + "\n");
-          // })
+          .catch(err => {
+            console.log(err);
+            return res.status(500).send('ERROR : ' + err.message + "\n");
+          })
 
       } else {
         return res.status(200).send('DONE : No changes to sync' + "\n");
