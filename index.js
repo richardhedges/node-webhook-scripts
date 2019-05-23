@@ -53,12 +53,12 @@ hooks.forEach(hook => {
               typeof change.old.type != 'undefined'
             && typeof change.old.name != 'undefined'
             && change.old.type == 'branch'
-            && change.old.name == 'dev'
+            && change.old.name == cfg.branch
             ) || (
               typeof change.new.type != 'undefined'
             && typeof change.new.name != 'undefined'
             && change.new.type == 'branch'
-            && change.new.name == 'dev'
+            && change.new.name == cfg.branch
             )
           ) {
             init = true;
