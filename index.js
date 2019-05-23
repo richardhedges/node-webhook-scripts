@@ -4,6 +4,9 @@ const runCmd = require('./runcmd');
 const cfg = require('./config');
 const hooks = require('./hooks.js');
 
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
+
 const verbose = process.env.VERBOSE ? true : false;
 
 // For each path in hooks.json attach to our router
@@ -27,7 +30,7 @@ hooks.forEach(hook => {
     }
 
     app[hook.method.toLowerCase() || "get"](hook.path, function (req, res, next) {
-      if(cfg.token && req.headers.token !== cfg.token) {
+      if(cfg.token && (req.headers.token !== cfg.token && req.query.token !== cfg.token)) {
         return res.status(403).send('Forbidden');
       }
       return next();
@@ -36,13 +39,52 @@ hooks.forEach(hook => {
         console.log(`webhook ${hook.method.toUpperCase()} ON ${hook.path}`);
       }
 
-      runCmd(hook.command, hook.cwd)
-        .then(stdout => {
-          return res.send('DONE : ' + stdout + "\n");
-        })
-        .catch(err => {
-          return res.status(500).send('ERROR : ' + err.message + "\n");
-        })
+      // console.log(req.body.push.changes);
+
+      var changes = req.body.push.changes;
+      var init = false;
+
+      for (let change of changes) {
+
+        if (typeof change.old != 'undefined' || typeof change.new != 'undefined') {
+
+          if (
+            (
+              typeof change.old.type != 'undefined'
+            && typeof change.old.name != 'undefined'
+            && change.old.type == 'branch'
+            && change.old.name == 'dev'
+            ) || (
+              typeof change.new.type != 'undefined'
+            && typeof change.new.name != 'undefined'
+            && change.new.type == 'branch'
+            && change.new.name == 'dev'
+            )
+          ) {
+            init = true;
+            break;
+          }
+
+        }
+
+      }
+
+      if (init) {
+
+        runCmd(hook.command, hook.cwd)
+          .then(stdout => {
+            return res.send('DONE : ' + stdout + "\n");
+          })
+          // need to implement this catch below but for now it incorrectly throws an error on `git pull` so its commented out
+          // .catch(err => {
+          //   console.log(err);
+          //   return res.status(500).send('ERROR : ' + err.message + "\n");
+          // })
+
+      } else {
+        return res.status(200).send('DONE : No changes to sync' + "\n");
+      }
+
     });
   }
 })
